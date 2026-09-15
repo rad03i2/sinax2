@@ -1,0 +1,19 @@
+﻿GeneratedAt,2026-09-12 22:56:07
+PrivacyMode,Enabled
+
+Timestamp,EventType,Status,TargetPath
+1789075912.3627412,VAULT_DECRYPTED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_68f6c62c.txt.sinaxvault
+1789075912.2127552,VAULT_CREATED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_68f6c62c.txt.sinaxvault
+1789075912.0305996,SAFE_SHARE_COMPLETED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_test_meta_b4169a18_private.txt
+1789075788.5555565,VAULT_DECRYPTED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_7124d3c2.txt.sinaxvault
+1789075788.3577447,VAULT_CREATED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_7124d3c2.txt.sinaxvault
+1789075788.120786,SAFE_SHARE_COMPLETED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_test_meta_0ee6a956_private.txt
+1789075738.4552085,VAULT_DECRYPTED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_9f914dda.txt.sinaxvault
+1789075738.2995574,VAULT_CREATED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_9f914dda.txt.sinaxvault
+1789075738.1486278,SAFE_SHARE_COMPLETED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_test_meta_8a065a7e_private.txt
+1789075664.998228,VAULT_DECRYPTED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_43512e84.txt.sinaxvault
+1789075664.8784797,VAULT_CREATED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_43512e84.txt.sinaxvault
+1789075664.7364175,SAFE_SHARE_COMPLETED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_test_meta_02d4d45b_private.txt
+1789075612.1838286,VAULT_DECRYPTED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_0b919c9b.txt.sinaxvault
+1789075611.9737291,VAULT_CREATED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_secret_0b919c9b.txt.sinaxvault
+1789075611.7168107,SAFE_SHARE_COMPLETED,SUCCESS,C:\Users\[USERNAME_REDACTED]\AppData\Local\Temp\sinax_test_meta_9336f723_private.txt

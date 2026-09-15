@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/">
+        <file>../ui/qml/Theme.qml</file>
+        <file>../ui/qml/qmldir</file>
+        <file>../ui/qml/components/qmldir</file>
+        <file>../ui/qml/components/SinaxIcon.qml</file>
+        <file>../ui/qml/components/SinaxButton.qml</file>
+        <file>../ui/qml/components/SinaxIconButton.qml</file>
+        <file>../ui/qml/components/SinaxCard.qml</file>
+        <file>../ui/qml/components/SinaxTextField.qml</file>
+        <file>../ui/qml/components/SinaxSearchBox.qml</file>
+        <file>../ui/qml/components/SinaxSwitch.qml</file>
+        <file>../ui/qml/components/SinaxBadge.qml</file>
+        <file>../ui/qml/components/SinaxProgress.qml</file>
+        <file>../ui/qml/components/SinaxDialog.qml</file>
+        <file>../ui/qml/components/SinaxTooltip.qml</file>
+        <file>../ui/qml/components/SinaxToast.qml</file>
+        <file>../ui/qml/navigation/Sidebar.qml</file>
+        <file>../ui/qml/navigation/SidebarItem.qml</file>
+        <file>../ui/qml/navigation/TopBar.qml</file>
+        <file>../ui/qml/pages/Dashboard.qml</file>
+    </qresource>
+</RCC>

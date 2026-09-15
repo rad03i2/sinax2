@@ -1,0 +1,714 @@
+[
+  {
+    "category_id": "academic",
+    "category_name_ar": "أكاديمية ودراسية (PDF ومحاضرات)",
+    "patterns": [
+      {
+        "name_ar": "محاضرة {n}",
+        "pattern": "محاضرة {n}"
+      },
+      {
+        "name_ar": "المحاضرة رقم {n}",
+        "pattern": "المحاضرة رقم {n}"
+      },
+      {
+        "name_ar": "محاضرة ({n})",
+        "pattern": "محاضرة ({n})"
+      },
+      {
+        "name_ar": "محاضرة - {n}",
+        "pattern": "محاضرة - {n}"
+      },
+      {
+        "name_ar": "درس {n}",
+        "pattern": "درس {n}"
+      },
+      {
+        "name_ar": "الدرس رقم {n}",
+        "pattern": "الدرس رقم {n}"
+      },
+      {
+        "name_ar": "فصل {n}",
+        "pattern": "فصل {n}"
+      },
+      {
+        "name_ar": "الفصل {n}",
+        "pattern": "الفصل {n}"
+      },
+      {
+        "name_ar": "وحدة {n}",
+        "pattern": "وحدة {n}"
+      },
+      {
+        "name_ar": "الوحدة {n}",
+        "pattern": "الوحدة {n}"
+      },
+      {
+        "name_ar": "بحث {n}",
+        "pattern": "بحث {n}"
+      },
+      {
+        "name_ar": "بحث علمي {n}",
+        "pattern": "بحث علمي {n}"
+      },
+      {
+        "name_ar": "واجب {n}",
+        "pattern": "واجب {n}"
+      },
+      {
+        "name_ar": "تمرين {n}",
+        "pattern": "تمرين {n}"
+      },
+      {
+        "name_ar": "امتحان {n}",
+        "pattern": "امتحان {n}"
+      },
+      {
+        "name_ar": "مراجعة {n}",
+        "pattern": "مراجعة {n}"
+      },
+      {
+        "name_ar": "ملخص {n}",
+        "pattern": "ملخص {n}"
+      },
+      {
+        "name_ar": "مذكرة {n}",
+        "pattern": "مذكرة {n}"
+      },
+      {
+        "name_ar": "كتاب {n}",
+        "pattern": "كتاب {n}"
+      },
+      {
+        "name_ar": "الجزء {n}",
+        "pattern": "الجزء {n}"
+      },
+      {
+        "name_ar": "Lecture {n}",
+        "pattern": "Lecture {n}"
+      },
+      {
+        "name_ar": "Lecture_{n}",
+        "pattern": "Lecture_{n}"
+      },
+      {
+        "name_ar": "Lec {n}",
+        "pattern": "Lec {n}"
+      },
+      {
+        "name_ar": "Lec_{n}",
+        "pattern": "Lec_{n}"
+      },
+      {
+        "name_ar": "Chapter {n}",
+        "pattern": "Chapter {n}"
+      },
+      {
+        "name_ar": "Unit {n}",
+        "pattern": "Unit {n}"
+      },
+      {
+        "name_ar": "Lesson {n}",
+        "pattern": "Lesson {n}"
+      },
+      {
+        "name_ar": "Assignment {n}",
+        "pattern": "Assignment {n}"
+      },
+      {
+        "name_ar": "Homework {n}",
+        "pattern": "Homework {n}"
+      },
+      {
+        "name_ar": "Research {n}",
+        "pattern": "Research {n}"
+      },
+      {
+        "name_ar": "Paper {n}",
+        "pattern": "Paper {n}"
+      },
+      {
+        "name_ar": "Exam {n}",
+        "pattern": "Exam {n}"
+      },
+      {
+        "name_ar": "Quiz {n}",
+        "pattern": "Quiz {n}"
+      },
+      {
+        "name_ar": "Slide {n}",
+        "pattern": "Slide {n}"
+      },
+      {
+        "name_ar": "Document {n}",
+        "pattern": "Document {n}"
+      },
+      {
+        "name_ar": "Doc {n}",
+        "pattern": "Doc {n}"
+      },
+      {
+        "name_ar": "Summary {n}",
+        "pattern": "Summary {n}"
+      },
+      {
+        "name_ar": "Book {n}",
+        "pattern": "Book {n}"
+      },
+      {
+        "name_ar": "Page {n}",
+        "pattern": "Page {n}"
+      },
+      {
+        "name_ar": "Reference {n}",
+        "pattern": "Reference {n}"
+      }
+    ]
+  },
+  {
+    "category_id": "photos",
+    "category_name_ar": "الصور والفوتوغراف (Photos & Images)",
+    "patterns": [
+      {
+        "name_ar": "صورة {n}",
+        "pattern": "صورة {n}"
+      },
+      {
+        "name_ar": "صورة_{n}",
+        "pattern": "صورة_{n}"
+      },
+      {
+        "name_ar": "صورة ({n})",
+        "pattern": "صورة ({n})"
+      },
+      {
+        "name_ar": "لقطة {n}",
+        "pattern": "لقطة {n}"
+      },
+      {
+        "name_ar": "لقطة شاشة {n}",
+        "pattern": "لقطة شاشة {n}"
+      },
+      {
+        "name_ar": "ألبوم {n}",
+        "pattern": "ألبوم {n}"
+      },
+      {
+        "name_ar": "تصوير {n}",
+        "pattern": "تصوير {n}"
+      },
+      {
+        "name_ar": "صورة شخصية {n}",
+        "pattern": "صورة شخصية {n}"
+      },
+      {
+        "name_ar": "صورة عائلية {n}",
+        "pattern": "صورة عائلية {n}"
+      },
+      {
+        "name_ar": "صورة الطبيعة {n}",
+        "pattern": "صورة الطبيعة {n}"
+      },
+      {
+        "name_ar": "خلفية {n}",
+        "pattern": "خلفية {n}"
+      },
+      {
+        "name_ar": "تصميم {n}",
+        "pattern": "تصميم {n}"
+      },
+      {
+        "name_ar": "شعار {n}",
+        "pattern": "شعار {n}"
+      },
+      {
+        "name_ar": "أيقونة {n}",
+        "pattern": "أيقونة {n}"
+      },
+      {
+        "name_ar": "مشروع فوتوغراف {n}",
+        "pattern": "مشروع فوتوغراف {n}"
+      },
+      {
+        "name_ar": "IMG_{n}",
+        "pattern": "IMG_{n}"
+      },
+      {
+        "name_ar": "IMG-{n}",
+        "pattern": "IMG-{n}"
+      },
+      {
+        "name_ar": "PHOTO_{n}",
+        "pattern": "PHOTO_{n}"
+      },
+      {
+        "name_ar": "Photo {n}",
+        "pattern": "Photo {n}"
+      },
+      {
+        "name_ar": "Image {n}",
+        "pattern": "Image {n}"
+      },
+      {
+        "name_ar": "Pic {n}",
+        "pattern": "Pic {n}"
+      },
+      {
+        "name_ar": "Picture {n}",
+        "pattern": "Picture {n}"
+      },
+      {
+        "name_ar": "Screenshot_{n}",
+        "pattern": "Screenshot_{n}"
+      },
+      {
+        "name_ar": "Capture_{n}",
+        "pattern": "Capture_{n}"
+      },
+      {
+        "name_ar": "Wallpaper {n}",
+        "pattern": "Wallpaper {n}"
+      },
+      {
+        "name_ar": "Camera_{n}",
+        "pattern": "Camera_{n}"
+      },
+      {
+        "name_ar": "DCIM_{n}",
+        "pattern": "DCIM_{n}"
+      },
+      {
+        "name_ar": "DSC_{n}",
+        "pattern": "DSC_{n}"
+      },
+      {
+        "name_ar": "Scan_{n}",
+        "pattern": "Scan_{n}"
+      },
+      {
+        "name_ar": "Gallery_{n}",
+        "pattern": "Gallery_{n}"
+      }
+    ]
+  },
+  {
+    "category_id": "videos",
+    "category_name_ar": "الفيديو والمونتاج (Videos & Clips)",
+    "patterns": [
+      {
+        "name_ar": "فيديو {n}",
+        "pattern": "فيديو {n}"
+      },
+      {
+        "name_ar": "مقطع {n}",
+        "pattern": "مقطع {n}"
+      },
+      {
+        "name_ar": "حلقة {n}",
+        "pattern": "حلقة {n}"
+      },
+      {
+        "name_ar": "الحلقة {n}",
+        "pattern": "الحلقة {n}"
+      },
+      {
+        "name_ar": "مشهد {n}",
+        "pattern": "مشهد {n}"
+      },
+      {
+        "name_ar": "تسجيل {n}",
+        "pattern": "تسجيل {n}"
+      },
+      {
+        "name_ar": "تسجيل شاشة {n}",
+        "pattern": "تسجيل شاشة {n}"
+      },
+      {
+        "name_ar": "لقطة فيديو {n}",
+        "pattern": "لقطة فيديو {n}"
+      },
+      {
+        "name_ar": "جزء {n}",
+        "pattern": "جزء {n}"
+      },
+      {
+        "name_ar": "جلسة {n}",
+        "pattern": "جلسة {n}"
+      },
+      {
+        "name_ar": "دورة {n}",
+        "pattern": "دورة {n}"
+      },
+      {
+        "name_ar": "ورشة {n}",
+        "pattern": "ورشة {n}"
+      },
+      {
+        "name_ar": "Video {n}",
+        "pattern": "Video {n}"
+      },
+      {
+        "name_ar": "VID_{n}",
+        "pattern": "VID_{n}"
+      },
+      {
+        "name_ar": "Clip {n}",
+        "pattern": "Clip {n}"
+      },
+      {
+        "name_ar": "Episode {n}",
+        "pattern": "Episode {n}"
+      },
+      {
+        "name_ar": "Ep_{n}",
+        "pattern": "Ep_{n}"
+      },
+      {
+        "name_ar": "Scene {n}",
+        "pattern": "Scene {n}"
+      },
+      {
+        "name_ar": "Recording {n}",
+        "pattern": "Recording {n}"
+      },
+      {
+        "name_ar": "ScreenRec_{n}",
+        "pattern": "ScreenRec_{n}"
+      },
+      {
+        "name_ar": "Part {n}",
+        "pattern": "Part {n}"
+      },
+      {
+        "name_ar": "Session {n}",
+        "pattern": "Session {n}"
+      },
+      {
+        "name_ar": "Movie {n}",
+        "pattern": "Movie {n}"
+      },
+      {
+        "name_ar": "Short_{n}",
+        "pattern": "Short_{n}"
+      },
+      {
+        "name_ar": "Reel_{n}",
+        "pattern": "Reel_{n}"
+      }
+    ]
+  },
+  {
+    "category_id": "audio",
+    "category_name_ar": "الصوتيات والموسيقى (Audio & Music)",
+    "patterns": [
+      {
+        "name_ar": "صوت {n}",
+        "pattern": "صوت {n}"
+      },
+      {
+        "name_ar": "مقطع صوتي {n}",
+        "pattern": "مقطع صوتي {n}"
+      },
+      {
+        "name_ar": "تسجيل صوتي {n}",
+        "pattern": "تسجيل صوتي {n}"
+      },
+      {
+        "name_ar": "ملاحظة صوتية {n}",
+        "pattern": "ملاحظة صوتية {n}"
+      },
+      {
+        "name_ar": "أنشودة {n}",
+        "pattern": "أنشودة {n}"
+      },
+      {
+        "name_ar": "تلاوة {n}",
+        "pattern": "تلاوة {n}"
+      },
+      {
+        "name_ar": "بودكاست {n}",
+        "pattern": "بودكاست {n}"
+      },
+      {
+        "name_ar": "كتاب مسموع {n}",
+        "pattern": "كتاب مسموع {n}"
+      },
+      {
+        "name_ar": "Audio {n}",
+        "pattern": "Audio {n}"
+      },
+      {
+        "name_ar": "Track {n}",
+        "pattern": "Track {n}"
+      },
+      {
+        "name_ar": "Track_{n}",
+        "pattern": "Track_{n}"
+      },
+      {
+        "name_ar": "Voice_{n}",
+        "pattern": "Voice_{n}"
+      },
+      {
+        "name_ar": "VoiceNote {n}",
+        "pattern": "VoiceNote {n}"
+      },
+      {
+        "name_ar": "Podcast {n}",
+        "pattern": "Podcast {n}"
+      },
+      {
+        "name_ar": "Song {n}",
+        "pattern": "Song {n}"
+      },
+      {
+        "name_ar": "Sound_{n}",
+        "pattern": "Sound_{n}"
+      },
+      {
+        "name_ar": "Record {n}",
+        "pattern": "Record {n}"
+      }
+    ]
+  },
+  {
+    "category_id": "documents",
+    "category_name_ar": "المستندات وWord (Documents)",
+    "patterns": [
+      {
+        "name_ar": "مستند {n}",
+        "pattern": "مستند {n}"
+      },
+      {
+        "name_ar": "تقرير {n}",
+        "pattern": "تقرير {n}"
+      },
+      {
+        "name_ar": "مقال {n}",
+        "pattern": "مقال {n}"
+      },
+      {
+        "name_ar": "خطاب {n}",
+        "pattern": "خطاب {n}"
+      },
+      {
+        "name_ar": "كتاب رسمي {n}",
+        "pattern": "كتاب رسمي {n}"
+      },
+      {
+        "name_ar": "مذكرة داخلية {n}",
+        "pattern": "مذكرة داخلية {n}"
+      },
+      {
+        "name_ar": "ملف عمل {n}",
+        "pattern": "ملف عمل {n}"
+      },
+      {
+        "name_ar": "مسودة {n}",
+        "pattern": "مسودة {n}"
+      },
+      {
+        "name_ar": "اتفاقية {n}",
+        "pattern": "اتفاقية {n}"
+      },
+      {
+        "name_ar": "سيرة ذاتية {n}",
+        "pattern": "سيرة ذاتية {n}"
+      },
+      {
+        "name_ar": "Document {n}",
+        "pattern": "Document {n}"
+      },
+      {
+        "name_ar": "Report {n}",
+        "pattern": "Report {n}"
+      },
+      {
+        "name_ar": "Article {n}",
+        "pattern": "Article {n}"
+      },
+      {
+        "name_ar": "Letter {n}",
+        "pattern": "Letter {n}"
+      },
+      {
+        "name_ar": "Memo {n}",
+        "pattern": "Memo {n}"
+      },
+      {
+        "name_ar": "Draft {n}",
+        "pattern": "Draft {n}"
+      },
+      {
+        "name_ar": "Summary {n}",
+        "pattern": "Summary {n}"
+      }
+    ]
+  },
+  {
+    "category_id": "sheets",
+    "category_name_ar": "الجداول وExcel (Sheets & Data)",
+    "patterns": [
+      {
+        "name_ar": "جدول {n}",
+        "pattern": "جدول {n}"
+      },
+      {
+        "name_ar": "بيانات {n}",
+        "pattern": "بيانات {n}"
+      },
+      {
+        "name_ar": "سجل {n}",
+        "pattern": "سجل {n}"
+      },
+      {
+        "name_ar": "تقرير مالي {n}",
+        "pattern": "تقرير مالي {n}"
+      },
+      {
+        "name_ar": "ميزانية {n}",
+        "pattern": "ميزانية {n}"
+      },
+      {
+        "name_ar": "حسابات {n}",
+        "pattern": "حسابات {n}"
+      },
+      {
+        "name_ar": "كشف حساب {n}",
+        "pattern": "كشف حساب {n}"
+      },
+      {
+        "name_ar": "قائمة {n}",
+        "pattern": "قائمة {n}"
+      },
+      {
+        "name_ar": "إحصائيات {n}",
+        "pattern": "إحصائيات {n}"
+      },
+      {
+        "name_ar": "مخزون {n}",
+        "pattern": "مخزون {n}"
+      },
+      {
+        "name_ar": "Sheet {n}",
+        "pattern": "Sheet {n}"
+      },
+      {
+        "name_ar": "Data {n}",
+        "pattern": "Data {n}"
+      },
+      {
+        "name_ar": "Table {n}",
+        "pattern": "Table {n}"
+      },
+      {
+        "name_ar": "Budget {n}",
+        "pattern": "Budget {n}"
+      },
+      {
+        "name_ar": "Inventory {n}",
+        "pattern": "Inventory {n}"
+      },
+      {
+        "name_ar": "Accounting {n}",
+        "pattern": "Accounting {n}"
+      }
+    ]
+  },
+  {
+    "category_id": "presentations",
+    "category_name_ar": "العروض التقديمية وPowerPoint",
+    "patterns": [
+      {
+        "name_ar": "عرض {n}",
+        "pattern": "عرض {n}"
+      },
+      {
+        "name_ar": "عرض تقديمي {n}",
+        "pattern": "عرض تقديمي {n}"
+      },
+      {
+        "name_ar": "شرائح {n}",
+        "pattern": "شرائح {n}"
+      },
+      {
+        "name_ar": "سيمنار {n}",
+        "pattern": "سيمنار {n}"
+      },
+      {
+        "name_ar": "ندوة {n}",
+        "pattern": "ندوة {n}"
+      },
+      {
+        "name_ar": "مناقشة {n}",
+        "pattern": "مناقشة {n}"
+      },
+      {
+        "name_ar": "Presentation {n}",
+        "pattern": "Presentation {n}"
+      },
+      {
+        "name_ar": "SlideDeck {n}",
+        "pattern": "SlideDeck {n}"
+      },
+      {
+        "name_ar": "Seminar {n}",
+        "pattern": "Seminar {n}"
+      },
+      {
+        "name_ar": "Pitch {n}",
+        "pattern": "Pitch {n}"
+      }
+    ]
+  },
+  {
+    "category_id": "general",
+    "category_name_ar": "أنماط عامة وتاريخية (General & Dates)",
+    "patterns": [
+      {
+        "name_ar": "{orig} ({n})",
+        "pattern": "{orig} ({n})"
+      },
+      {
+        "name_ar": "{orig} - {n}",
+        "pattern": "{orig} - {n}"
+      },
+      {
+        "name_ar": "{orig}_{n}",
+        "pattern": "{orig}_{n}"
+      },
+      {
+        "name_ar": "{orig} - {date}",
+        "pattern": "{orig} - {date}"
+      },
+      {
+        "name_ar": "{date} - {orig}",
+        "pattern": "{date} - {orig}"
+      },
+      {
+        "name_ar": "{date}_{n}",
+        "pattern": "{date}_{n}"
+      },
+      {
+        "name_ar": "{parent} - {n}",
+        "pattern": "{parent} - {n}"
+      },
+      {
+        "name_ar": "{parent}_{n}",
+        "pattern": "{parent}_{n}"
+      },
+      {
+        "name_ar": "ملف {n}",
+        "pattern": "ملف {n}"
+      },
+      {
+        "name_ar": "File {n}",
+        "pattern": "File {n}"
+      },
+      {
+        "name_ar": "Item_{n}",
+        "pattern": "Item_{n}"
+      }
+    ]
+  }
+]
