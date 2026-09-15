@@ -7,7 +7,7 @@ import subprocess
 import sys
 
 EXCLUDED_DIRS = {'.git', '.venv', 'venv', 'env', 'ENV', 'build', 'dist',
-                 '__pycache__', 'logs', 'temp', 'tmp', '.pytest_cache',
+                 '__pycache__', 'logs', 'temp', '.pytest_cache',
                  '.mypy_cache', '.ruff_cache', 'htmlcov', '.cache'}
 EXCLUDED_EXTS = {'.pyc', '.pyo', '.pyd', '.log', '.coverage'}
 
@@ -16,8 +16,9 @@ def scan_local():
     local_files = []
     local_dirs = set()
     for root, dirs, files in os.walk('.'):
-        parts = root.replace('\\', '/').lstrip('./').split('/')
-        if any(p in EXCLUDED_DIRS for p in parts):
+        parts = os.path.normpath(root).replace('\\', '/').split('/')
+        # parts[0] is '.' for root; check parts[1:] for excluded
+        if any(p in EXCLUDED_DIRS for p in parts[1:]):
             dirs.clear()
             continue
         dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
@@ -27,7 +28,7 @@ def scan_local():
             ext = os.path.splitext(f)[1].lower()
             if ext in EXCLUDED_EXTS:
                 continue
-            rel = os.path.normpath(os.path.join(root, f)).replace('\\', '/').lstrip('./')
+            rel = os.path.relpath(os.path.join(root, f), '.').replace('\\', '/')
             local_files.append(rel)
     return local_files, local_dirs
 
