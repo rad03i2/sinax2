@@ -12,6 +12,14 @@ Flickable {
     boundsBehavior: Flickable.StopAtBounds
     clip: true
 
+    signal toolRequested(string toolId)
+
+    function openTool(toolId) {
+        var route = String(toolId || "").trim()
+        if (route.length > 0)
+            root.toolRequested(route)
+    }
+
     SinaxScrollBar {
         flickable: root
     }
@@ -108,7 +116,7 @@ Flickable {
                     text: "فتح في " + root.recommendedAction + "  ←"
                     variant: "primary"
                     onClicked: {
-                        fileManagementController.openTool(root.recommendedRoute);
+                        root.openTool(root.recommendedRoute);
                         root.recommendedAction = "";
                     }
                 }
@@ -146,7 +154,7 @@ Flickable {
                 iconColor: "#60CDFF"
                 badgeText: "نشط وشامل"
                 favorite: fileManagementController.isFavorite("batch_rename")
-                onClicked: fileManagementController.openTool("batch_rename")
+                onClicked: root.openTool("batch_rename")
                 onFavoriteToggled: function(fav) { fileManagementController.toggleFavorite("batch_rename"); }
             }
 
@@ -159,7 +167,7 @@ Flickable {
                 iconColor: "#13C2C2"
                 badgeText: "50+ صيغة"
                 favorite: fileManagementController.isFavorite("converter")
-                onClicked: fileManagementController.openTool("converter")
+                onClicked: root.openTool("converter")
                 onFavoriteToggled: function(fav) { fileManagementController.toggleFavorite("converter"); }
             }
 
@@ -172,7 +180,7 @@ Flickable {
                 iconColor: "#FFB900"
                 badgeText: "تجميع ذكي"
                 favorite: fileManagementController.isFavorite("merge_files")
-                onClicked: fileManagementController.openTool("merge_files")
+                onClicked: root.openTool("merge_files")
                 onFavoriteToggled: function(fav) { fileManagementController.toggleFavorite("merge_files"); }
             }
 
@@ -185,7 +193,7 @@ Flickable {
                 iconColor: "#52C41A"
                 badgeText: "فرز آلي"
                 favorite: fileManagementController.isFavorite("smart_organize")
-                onClicked: fileManagementController.openTool("smart_organize")
+                onClicked: root.openTool("smart_organize")
                 onFavoriteToggled: function(fav) { fileManagementController.toggleFavorite("smart_organize"); }
             }
 
@@ -198,7 +206,7 @@ Flickable {
                 iconColor: "#9254DE"
                 badgeText: "تحليل معمق"
                 favorite: fileManagementController.isFavorite("search_analysis")
-                onClicked: fileManagementController.openTool("search_analysis")
+                onClicked: root.openTool("search_analysis")
                 onFavoriteToggled: function(fav) { fileManagementController.toggleFavorite("search_analysis"); }
             }
 
@@ -211,7 +219,7 @@ Flickable {
                 iconColor: "#F5222D"
                 badgeText: "SHA-256"
                 favorite: fileManagementController.isFavorite("duplicate_copy")
-                onClicked: fileManagementController.openTool("duplicate_copy")
+                onClicked: root.openTool("duplicate_copy")
                 onFavoriteToggled: function(fav) { fileManagementController.toggleFavorite("duplicate_copy"); }
             }
 
@@ -224,7 +232,7 @@ Flickable {
                 iconColor: "#FF4D4F"
                 badgeText: "مركز متكامل"
                 favorite: fileManagementController.isFavorite("pdf_center")
-                onClicked: fileManagementController.openTool("pdf_center")
+                onClicked: root.openTool("pdf_center")
                 onFavoriteToggled: function(fav) { fileManagementController.toggleFavorite("pdf_center"); }
             }
         }
@@ -282,10 +290,7 @@ Flickable {
                         anchors.fill: parent
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            // Quick launch batch rename targeting this directory
-                            fileManagementController.openTool("batch_rename");
-                        }
+                        onClicked: root.openTool("batch_rename")
                     }
                 }
             }
