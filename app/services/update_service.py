@@ -7,7 +7,8 @@ separate SINAX-Updater.exe so the running application can be replaced safely.
 
 For a private GitHub repository, set SINAX_GITHUB_TOKEN in the environment for
 developer testing. Production clients should use a public release feed; no token
-is ever embedded or persisted by SINAX.
+is ever embedded or persisted by SINAX. SINAX_UPDATE_API can override the release
+feed URL without rebuilding the application.
 """
 
 from __future__ import annotations
@@ -31,7 +32,8 @@ from app.core.logger import get_logger
 
 logger = get_logger("update_service")
 
-_RELEASES_API = "https://api.github.com/repos/rad03i2/sinax2/releases/latest"
+_DEFAULT_RELEASES_API = "https://api.github.com/repos/rad03i2/sinax2/releases/latest"
+_RELEASES_API = os.environ.get("SINAX_UPDATE_API", _DEFAULT_RELEASES_API).strip() or _DEFAULT_RELEASES_API
 _USER_AGENT = "SINAX-Updater/1.0"
 
 
