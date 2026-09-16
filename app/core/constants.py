@@ -9,7 +9,7 @@ from pathlib import Path
 
 APP_NAME = "SINAX"
 APP_NAME_AR = "ساينكس"
-APP_VERSION = "1.1.2"
+APP_VERSION = "1.1.3"
 APP_TAGLINE_AR = "نظام إدارة الحاسوب والملفات"
 APP_DESCRIPTION = "نظام إدارة الحاسوب والملفات"
 DEVELOPER_NAME = "رضوان عبد الهادي"
