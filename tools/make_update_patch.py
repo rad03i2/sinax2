@@ -6,11 +6,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import shutil
 import tempfile
 import zipfile
 from pathlib import Path
+
+# The updater is the process applying the patch. Replacing/deleting its own
+# executable while it is running is unsafe on Windows, so it is shipped only
+# with full releases and deliberately excluded from incremental patches.
+IGNORED_PATHS = {"SINAX-Updater.exe"}
 
 
 def sha256_file(path: Path) -> str:
@@ -27,6 +31,8 @@ def file_map(root: Path) -> dict[str, dict]:
         if not path.is_file():
             continue
         rel = path.relative_to(root).as_posix()
+        if rel in IGNORED_PATHS:
+            continue
         result[rel] = {
             "path": path,
             "sha256": sha256_file(path),
