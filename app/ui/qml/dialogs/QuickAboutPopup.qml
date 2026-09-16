@@ -151,7 +151,8 @@ Rectangle {
                 Layout.fillWidth: true
             }
 
-            // Circular local developer avatar stored with SINAX resources.
+            // Circular local developer avatar. Python resolves the real file URL
+            // for both source runs and PyInstaller-packaged Windows builds.
             Rectangle {
                 Layout.preferredWidth: 48
                 Layout.preferredHeight: 48
@@ -159,15 +160,18 @@ Rectangle {
                 color: Theme.surface
                 border.color: Theme.primary
                 border.width: 1
+                clip: true
 
                 Image {
-                    anchors.centerIn: parent
-                    width: 44
-                    height: 44
-                    source: Qt.resolvedUrl("../../../../resources/images/about/radwan_profile.png")
-                    fillMode: Image.PreserveAspectFit
+                    anchors.fill: parent
+                    anchors.margins: 2
+                    source: (typeof quickAboutController !== "undefined" && quickAboutController.developerPhotoUrl.length > 0)
+                            ? quickAboutController.developerPhotoUrl
+                            : Qt.resolvedUrl("../../../../resources/images/about/radwan_profile.png")
+                    fillMode: Image.PreserveAspectCrop
                     smooth: true
                     mipmap: true
+                    cache: false
                 }
             }
 
