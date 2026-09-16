@@ -318,7 +318,7 @@ Rectangle {
                 visible: !navController.isCollapsed
                 Layout.alignment: Qt.AlignCenter
                 Layout.topMargin: 4
-                text: "SINAX v1.0.0"
+                text: "SINAX v1.1.1 • تحديث تجريبي"
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
                 color: Theme.textMuted

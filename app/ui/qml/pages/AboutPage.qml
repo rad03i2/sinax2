@@ -98,7 +98,7 @@ Item {
                     SinaxInfoRow {
                         Layout.fillWidth: true
                         label: "رقم الإصدار (Version):"
-                        value: "v1.0.0"
+                        value: "v1.1.1 (تجربة التحديث)"
                     }
 
                     SinaxInfoRow {
