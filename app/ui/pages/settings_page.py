@@ -12,6 +12,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtQuickWidgets import QQuickWidget
 from app.core.qml_helper import configure_qml_engine, get_qml_url
 from app.core.config import config
+from app.controllers.settings_controller import settings_controller
 from app.ui.themes.theme_manager import theme_manager
 from app.ui.icons import get_icon
 
@@ -29,7 +30,15 @@ class SettingsPage(QWidget):
         # Page 0: Modern QML Settings
         self.quick_widget = QQuickWidget(self)
         self.quick_widget.setResizeMode(QQuickWidget.SizeRootObjectToView)
-        configure_qml_engine(self.quick_widget.engine(), "settingsController")
+
+        # Register the settings controller explicitly on this QML engine.
+        # The generic lazy resolver remains in place, but this direct binding is
+        # intentional: update buttons must never render as inert controls in a
+        # frozen/PyInstaller build if lazy controller discovery fails.
+        engine = self.quick_widget.engine()
+        configure_qml_engine(engine, "settingsController")
+        engine.rootContext().setContextProperty("settingsController", settings_controller)
+
         self.quick_widget.setSource(get_qml_url("pages/SettingsPage.qml"))
         self.stack.addWidget(self.quick_widget)
 

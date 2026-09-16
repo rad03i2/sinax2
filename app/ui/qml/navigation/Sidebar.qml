@@ -313,12 +313,12 @@ Rectangle {
                 }
             }
 
-            // Version Label
+            // Version Label — always read the real app version from the shared About controller.
             Text {
                 visible: !navController.isCollapsed
                 Layout.alignment: Qt.AlignCenter
                 Layout.topMargin: 4
-                text: "SINAX v1.1.2 • إصلاح التحديث"
+                text: "SINAX v" + (typeof quickAboutController !== "undefined" ? quickAboutController.appVersion : "1.1.4") + " • تحديث تلقائي"
                 font.family: Theme.fontFamily
                 font.pixelSize: 10
                 color: Theme.textMuted
