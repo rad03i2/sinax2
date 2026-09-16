@@ -27,18 +27,16 @@ Item {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Theme.spacingL
 
-            // 1. Page Header with Breadcrumbs & Action
             SinaxPageHeader {
                 Layout.fillWidth: true
                 title: "إعدادات البرنامج والتفضيلات"
-                subtitle: "تخصيص المظهر، إدارة الأداء، تنبيهات الأمان، وخيارات المعالجة التلقائية."
+                subtitle: "تخصيص المظهر، الأداء، الأمان، والتحديثات السحابية."
                 iconName: "settings"
                 breadcrumbCurrent: "الإعدادات"
                 actionText: "استعادة الافتراضيات ⟲"
                 onActionClicked: settingsController.resetToDefaults()
             }
 
-            // 2. Section 1: Appearance & Theme
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: appCol.implicitHeight + Theme.spacingL * 2
@@ -63,7 +61,6 @@ Item {
 
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.divider }
 
-                    // Theme selector buttons
                     RowLayout {
                         Layout.fillWidth: true
                         layoutDirection: Qt.RightToLeft
@@ -103,7 +100,6 @@ Item {
                         }
                     }
 
-                    // Animations toggle
                     RowLayout {
                         Layout.fillWidth: true
                         layoutDirection: Qt.RightToLeft
@@ -124,7 +120,6 @@ Item {
                 }
             }
 
-            // 3. Section 2: Performance & Caching
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: perfCol.implicitHeight + Theme.spacingL * 2
@@ -187,7 +182,112 @@ Item {
                 }
             }
 
-            // 4. Section 3: Guards & Safe Actions
+            Rectangle {
+                Layout.fillWidth: true
+                implicitHeight: updateCol.implicitHeight + Theme.spacingL * 2
+                radius: Theme.radiusMedium
+                color: Theme.surface
+                border.color: settingsController.updateAvailable ? Theme.accent : Theme.borderSubtle
+                border.width: settingsController.updateAvailable ? 2 : 1
+
+                ColumnLayout {
+                    id: updateCol
+                    anchors.fill: parent
+                    anchors.margins: Theme.spacingL
+                    spacing: Theme.spacingM
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        layoutDirection: Qt.RightToLeft
+
+                        Text {
+                            text: "تحديث SINAX من GitHub"
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontSectionTitle
+                            font.bold: true
+                            color: Theme.textPrimary
+                            Layout.fillWidth: true
+                        }
+
+                        SinaxBadge {
+                            text: "الإصدار الحالي " + settingsController.currentVersion
+                            variant: "info"
+                        }
+                    }
+
+                    Rectangle { Layout.fillWidth: true; height: 1; color: Theme.divider }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: settingsController.updateStatus
+                        horizontalAlignment: Text.AlignRight
+                        wrapMode: Text.WordWrap
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Theme.fontBody
+                        color: settingsController.updateState === "error" ? Theme.danger : Theme.textSecondary
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        layoutDirection: Qt.RightToLeft
+                        visible: settingsController.updateAvailable
+
+                        SinaxBadge {
+                            text: "الجديد " + settingsController.latestVersion
+                            variant: "success"
+                        }
+
+                        SinaxBadge {
+                            text: "حجم التحديث " + settingsController.updateSize
+                            variant: "default"
+                        }
+
+                        Item { Layout.fillWidth: true }
+                    }
+
+                    ProgressBar {
+                        Layout.fillWidth: true
+                        visible: settingsController.updateState === "downloading" || settingsController.updateState === "installing"
+                        from: 0
+                        to: 100
+                        value: settingsController.updateProgress
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+                        layoutDirection: Qt.RightToLeft
+                        spacing: Theme.spacingM
+
+                        SinaxButton {
+                            text: settingsController.updateBusy ? "جارٍ الفحص..." : "فحص التحديثات"
+                            variant: "secondary"
+                            enabled: !settingsController.updateBusy
+                            onClicked: settingsController.checkForUpdates()
+                        }
+
+                        SinaxButton {
+                            text: "تنزيل وتثبيت التحديث"
+                            variant: "primary"
+                            visible: settingsController.updateAvailable
+                            enabled: !settingsController.updateBusy
+                            onClicked: settingsController.downloadAndInstallUpdate()
+                        }
+
+                        Item { Layout.fillWidth: true }
+                    }
+
+                    Text {
+                        Layout.fillWidth: true
+                        text: "يُنزل SINAX الملفات التي تغيرت فقط، ويتحقق من SHA-256، ثم يستخدم SINAX-Updater.exe مع نسخة احتياطية وRollback تلقائي عند الفشل."
+                        horizontalAlignment: Text.AlignRight
+                        wrapMode: Text.WordWrap
+                        font.family: Theme.fontFamily
+                        font.pixelSize: Math.max(11, Theme.fontBody - 1)
+                        color: Theme.textMuted
+                    }
+                }
+            }
+
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: guardCol.implicitHeight + Theme.spacingL * 2
