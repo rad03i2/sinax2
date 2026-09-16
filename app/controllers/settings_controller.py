@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 """
 SINAX Settings Controller
-Coordinates user preferences, appearance, performance tuning, and settings search
-for SettingsPage.qml.
+Coordinates user preferences, appearance, performance tuning, update management,
+and settings search for SettingsPage.qml.
 """
 
-from typing import List, Dict, Any, Optional
+from typing import Any
 from PySide6.QtCore import QObject, Signal, Property, Slot
 
 from app.core.logger import get_logger
 from app.core.config import config
 from app.controllers.theme_controller import theme_controller
+from app.services.update_service import update_service
 
 logger = get_logger("settings_controller")
 
@@ -23,6 +24,8 @@ class SettingsController(QObject):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._search_query = ""
+        update_service.changed.connect(self.settingsChanged)
+        update_service.errorOccurred.connect(self.statusMessageChanged)
         self._load_config()
 
     def _load_config(self):
@@ -77,6 +80,51 @@ class SettingsController(QObject):
         if self._search_query != q:
             self._search_query = q
             self.searchQueryChanged.emit(q)
+
+    # Incremental updater properties exposed to QML
+    @Property(str, notify=settingsChanged)
+    def currentVersion(self) -> str:
+        return update_service.currentVersion
+
+    @Property(str, notify=settingsChanged)
+    def latestVersion(self) -> str:
+        return update_service.latestVersion
+
+    @Property(str, notify=settingsChanged)
+    def updateStatus(self) -> str:
+        return update_service.statusText
+
+    @Property(str, notify=settingsChanged)
+    def updateState(self) -> str:
+        return update_service.state
+
+    @Property(int, notify=settingsChanged)
+    def updateProgress(self) -> int:
+        return update_service.progress
+
+    @Property(bool, notify=settingsChanged)
+    def updateAvailable(self) -> bool:
+        return update_service.updateAvailable
+
+    @Property(bool, notify=settingsChanged)
+    def updateBusy(self) -> bool:
+        return update_service.busy
+
+    @Property(str, notify=settingsChanged)
+    def updateSize(self) -> str:
+        return update_service.updateSize
+
+    @Property(str, notify=settingsChanged)
+    def updateReleaseNotes(self) -> str:
+        return update_service.releaseNotes
+
+    @Slot()
+    def checkForUpdates(self):
+        update_service.checkForUpdates()
+
+    @Slot()
+    def downloadAndInstallUpdate(self):
+        update_service.downloadAndInstall()
 
     @Slot(str, "QVariant")
     def setSetting(self, key: str, value: Any):
