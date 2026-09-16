@@ -42,8 +42,12 @@ jobs:
         shell: pwsh
         run: |
           python -c "import PySide6, psutil; print('PySide6', PySide6.__version__); print('psutil', psutil.__version__)"
-          python -m compileall -q main.py app tools
+          python -m compileall -q main.py app tools tests\test_incremental_update.py
           python -c "from app.core.constants import APP_VERSION; print('SINAX version', APP_VERSION)"
+
+      - name: Test incremental updater
+        shell: pwsh
+        run: python -m unittest tests.test_incremental_update -v
 
       - name: Build SINAX with PyInstaller
         shell: pwsh
