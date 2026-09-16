@@ -7,7 +7,7 @@ import "../components"
 Rectangle {
     id: root
     width: 420
-    height: 380
+    height: 398
     radius: Theme.radiusLarge
     color: Theme.surfaceElevated
     border.color: Theme.borderSubtle
@@ -139,22 +139,36 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             layoutDirection: Qt.RightToLeft
-            spacing: 8
+            spacing: 10
 
             Text {
-                text: "المطور والمبرمج:"
-                font.family: Theme.fontFamily
-                font.pixelSize: 12
-                color: Theme.textMuted
-            }
-
-            Text {
-                text: typeof quickAboutController !== "undefined" ? quickAboutController.developerName : "رضوان عبد الهادي"
+                text: "المطور والمبرمج: " + (typeof quickAboutController !== "undefined" ? quickAboutController.developerName : "رضوان عبد الهادي")
                 font.family: Theme.fontFamily
                 font.pixelSize: 13
-                font.weight: Font.Bold
+                font.weight: Font.DemiBold
                 color: Theme.textPrimary
+                verticalAlignment: Text.AlignVCenter
                 Layout.fillWidth: true
+            }
+
+            // Circular local developer avatar stored with SINAX resources.
+            Rectangle {
+                Layout.preferredWidth: 48
+                Layout.preferredHeight: 48
+                radius: 24
+                color: Theme.surface
+                border.color: Theme.primary
+                border.width: 1
+
+                Image {
+                    anchors.centerIn: parent
+                    width: 44
+                    height: 44
+                    source: Qt.resolvedUrl("../../../../resources/images/about/radwan_profile.png")
+                    fillMode: Image.PreserveAspectFit
+                    smooth: true
+                    mipmap: true
+                }
             }
 
             // Close Action Button
