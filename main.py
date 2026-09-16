@@ -21,15 +21,18 @@ from app.core.config import config
 from app.core.logger import setup_logging, get_logger
 from app.core.startup_profiler import StartupProfiler
 from app.core.crash_recovery import crash_recovery_manager
+from app.core.runtime_ui_fixes import install_runtime_ui_fixes
 from app.ui.themes.theme_manager import theme_manager
 from app.ui.widgets.splash_screen import SinaxSplashScreen
 from app.ui.main_window import MainWindow
+
 
 def unhandled_exception_hook(exc_type, exc_value, exc_traceback):
     """Logs unexpected exceptions to file without frightening tracebacks to end user."""
     logger = get_logger("system")
     logger.critical("Unhandled Exception:", exc_info=(exc_type, exc_value, exc_traceback))
     sys.__excepthook__(exc_type, exc_value, exc_traceback)
+
 
 def main():
     StartupProfiler.record_milestone("Core & Environment")
@@ -46,6 +49,11 @@ def main():
 
     # Native RTL Arabic layout direction
     app.setLayoutDirection(Qt.RightToLeft)
+
+    # Apply the app-wide UI reliability repairs before any lazy page is created.
+    # This restores PDF/media tools, removes the obsolete media placeholder,
+    # protects the universal converter, and accelerates precision-touchpad scroll.
+    install_runtime_ui_fixes(app)
 
     # Apply configured theme (System / Light / Dark)
     theme_mode = config.get("theme_mode", "system")
