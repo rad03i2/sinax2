@@ -187,7 +187,7 @@ Item {
                 implicitHeight: updateCol.implicitHeight + Theme.spacingL * 2
                 radius: Theme.radiusMedium
                 color: Theme.surface
-                border.color: settingsController.updateAvailable ? Theme.accent : Theme.borderSubtle
+                border.color: settingsController.updateAvailable ? Theme.primary : Theme.borderSubtle
                 border.width: settingsController.updateAvailable ? 2 : 1
 
                 ColumnLayout {
@@ -224,7 +224,7 @@ Item {
                         wrapMode: Text.WordWrap
                         font.family: Theme.fontFamily
                         font.pixelSize: Theme.fontBody
-                        color: settingsController.updateState === "error" ? Theme.danger : Theme.textSecondary
+                        color: settingsController.updateState === "error" ? Theme.error : Theme.textSecondary
                     }
 
                     RowLayout {
