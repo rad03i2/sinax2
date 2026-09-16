@@ -7,6 +7,8 @@ ScrollBar {
     objectName: orientation === Qt.Vertical ? "vScrollBar" : "hScrollBar"
 
     property Flickable flickable: null
+    property real touchpadScrollMultiplier: 2.8
+    property real mouseWheelStepPixels: 96
     parent: flickable ? flickable : undefined
 
     // In RTL Arabic layout, vertical scrollbar is anchored to the LEFT edge
@@ -25,6 +27,41 @@ ScrollBar {
     position: flickable ? flickable.visibleArea.yPosition : visibleArea.yPosition
     active: flickable ? (flickable.moving || flickable.flashing || hovered || pressed) : (hovered || pressed)
     visible: policy === ScrollBar.AlwaysOn || (policy === ScrollBar.AsNeeded && size < 0.999)
+
+    // Precision touchpads send pixelDelta values that Qt intentionally keeps very
+    // small.  SINAX pages are long dashboards, so scale those deltas while keeping
+    // ordinary wheel movement predictable.  The handler is scoped to the whole
+    // Flickable even though it lives inside the reusable scrollbar component.
+    WheelHandler {
+        id: acceleratedWheel
+        parent: control.flickable
+        enabled: control.flickable !== null
+        target: null
+        orientation: Qt.Vertical
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+
+        onWheel: function(event) {
+            if (!control.flickable || control.flickable.contentHeight <= control.flickable.height)
+                return
+
+            var delta = 0
+            if (event.pixelDelta.y !== 0) {
+                // Windows precision touchpad / two-finger scrolling.
+                delta = event.pixelDelta.y * control.touchpadScrollMultiplier
+            } else if (event.angleDelta.y !== 0) {
+                // Traditional mouse wheel: 120 angle units per common wheel step.
+                delta = (event.angleDelta.y / 120.0) * control.mouseWheelStepPixels
+            }
+
+            if (delta === 0)
+                return
+
+            var maxY = Math.max(0, control.flickable.contentHeight - control.flickable.height)
+            var nextY = control.flickable.contentY - delta
+            control.flickable.contentY = Math.max(0, Math.min(maxY, nextY))
+            event.accepted = true
+        }
+    }
 
     onPositionChanged: {
         if (pressed && flickable) {
