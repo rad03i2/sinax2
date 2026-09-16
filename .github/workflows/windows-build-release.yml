@@ -91,25 +91,32 @@ jobs:
           compression-level: 0
           retention-days: 30
 
-      - name: Validate version tag
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Determine release version
+        id: release
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         shell: pwsh
         run: |
-          $appVersion = python -c "from app.core.constants import APP_VERSION; print(APP_VERSION)"
-          $tagVersion = '${{ github.ref_name }}'.TrimStart('v')
-          if ($appVersion.Trim() -ne $tagVersion) {
-            throw "Tag version $tagVersion does not match APP_VERSION $appVersion"
+          $appVersion = (python -c "from app.core.constants import APP_VERSION; print(APP_VERSION)").Trim()
+          $currentTag = "v$appVersion"
+          if ('${{ github.ref }}'.StartsWith('refs/tags/v')) {
+            $requestedTag = '${{ github.ref_name }}'
+            if ($requestedTag.TrimStart('v') -ne $appVersion) {
+              throw "Tag version $requestedTag does not match APP_VERSION $appVersion"
+            }
           }
+          "version=$appVersion" >> $env:GITHUB_OUTPUT
+          "tag=$currentTag" >> $env:GITHUB_OUTPUT
+          Write-Host "Release tag: $currentTag"
 
       - name: Prepare incremental update assets
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         id: patch
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $currentVersion = (python -c "from app.core.constants import APP_VERSION; print(APP_VERSION)").Trim()
-          $currentTag = '${{ github.ref_name }}'
+          $currentVersion = '${{ steps.release.outputs.version }}'
+          $currentTag = '${{ steps.release.outputs.tag }}'
           $releaseRows = gh release list --repo '${{ github.repository }}' --limit 50 --json tagName,isDraft,isPrerelease | ConvertFrom-Json
           $previous = $releaseRows | Where-Object { -not $_.isDraft -and -not $_.isPrerelease -and $_.tagName -ne $currentTag } | Select-Object -First 1
 
@@ -143,10 +150,12 @@ jobs:
           "has_patch=true" >> $env:GITHUB_OUTPUT
           "patch_name=$patchName" >> $env:GITHUB_OUTPUT
 
-      - name: Publish GitHub Release assets for version tags
-        if: startsWith(github.ref, 'refs/tags/v')
+      - name: Publish GitHub Release assets
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.release.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           files: |
             SINAX-Windows-x64.zip
             dist/SINAX/SINAX.exe
