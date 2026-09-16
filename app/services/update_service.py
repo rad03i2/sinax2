@@ -15,6 +15,7 @@ import sys
 import tempfile
 import threading
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional
@@ -26,9 +27,12 @@ from app.core.logger import get_logger
 
 logger = get_logger("update_service")
 
-_DEFAULT_RELEASES_API = "https://api.github.com/repos/rad03i2/sinax2/releases/latest"
+_REPO = "rad03i2/sinax2"
+_DEFAULT_RELEASES_API = f"https://api.github.com/repos/{_REPO}/releases/latest"
 _RELEASES_API = os.environ.get("SINAX_UPDATE_API", _DEFAULT_RELEASES_API).strip() or _DEFAULT_RELEASES_API
-_USER_AGENT = "SINAX-Updater/1.1"
+_LATEST_MANIFEST_URL = f"https://github.com/{_REPO}/releases/latest/download/update-manifest.json"
+_LATEST_ASSET_BASE = f"https://github.com/{_REPO}/releases/latest/download/"
+_USER_AGENT = "SINAX-Updater/1.2"
 
 
 def _version_tuple(value: str) -> tuple[int, ...]:
@@ -53,6 +57,10 @@ def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest().lower()
 
 
+def _latest_asset_url(name: str) -> str:
+    return _LATEST_ASSET_BASE + urllib.parse.quote(name, safe="")
+
+
 class UpdateService(QObject):
     changed = Signal()
     errorOccurred = Signal(str)
@@ -75,8 +83,6 @@ class UpdateService(QObject):
         self._busy = False
         self._auto_install = False
 
-        # Signals emitted by Python worker threads are queued back to Qt's GUI
-        # thread. This avoids starting/exiting the app from a background thread.
         self.installReady.connect(self._start_download_on_main)
         self.quitRequested.connect(QCoreApplication.quit)
 
@@ -139,8 +145,14 @@ class UpdateService(QObject):
             headers["Authorization"] = f"Bearer {token}"
         return headers
 
+    def _public_headers(self) -> Dict[str, str]:
+        return {
+            "User-Agent": _USER_AGENT,
+            "Accept": "*/*",
+        }
+
     def _read_url(self, url: str, *, binary: bool = False) -> bytes:
-        """Read a URL, retrying anonymously if a stale developer token fails."""
+        """Read GitHub API URL, retrying anonymously if a stale token fails."""
         req = urllib.request.Request(url, headers=self._headers(binary=binary))
         try:
             with urllib.request.urlopen(req, timeout=30 if not binary else 90) as response:
@@ -148,7 +160,7 @@ class UpdateService(QObject):
         except urllib.error.HTTPError as exc:
             token = os.environ.get("SINAX_GITHUB_TOKEN", "").strip()
             if token and exc.code in (401, 403, 404):
-                logger.warning("Authenticated update request failed (%s); retrying public feed", exc.code)
+                logger.warning("Authenticated request failed (%s); retrying anonymously", exc.code)
                 public_req = urllib.request.Request(
                     url,
                     headers=self._headers(binary=binary, include_token=False),
@@ -157,17 +169,140 @@ class UpdateService(QObject):
                     return response.read()
             raise
 
+    def _read_public(self, url: str, *, timeout: int = 90) -> bytes:
+        """Read a public GitHub release download URL without using the API/token."""
+        req = urllib.request.Request(url, headers=self._public_headers())
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return response.read()
+
     @staticmethod
     def _asset_download_url(asset: Dict[str, Any]) -> str:
-        # Public browser_download_url is preferred now that sinax2 is public.
-        # It also avoids failures from stale/invalid local GitHub tokens.
         return str(asset.get("browser_download_url") or asset.get("url") or "")
 
     def _asset_bytes(self, asset: Dict[str, Any]) -> bytes:
         url = self._asset_download_url(asset)
         if not url:
             raise RuntimeError("رابط ملف التحديث غير متاح")
+        if url.startswith("https://github.com/"):
+            return self._read_public(url)
         return self._read_url(url, binary=True)
+
+    def _configure_from_manifest(self, manifest: Dict[str, Any]) -> bool:
+        tag = str(manifest.get("version", "")).strip().lstrip("vV")
+        self._latest_version = tag or APP_VERSION
+        self._release_notes = ""
+        logger.info("Public update manifest version=%s", tag)
+
+        if not tag or _version_tuple(tag) <= _version_tuple(APP_VERSION):
+            self._update_available = False
+            self._update_size = ""
+            self._auto_install = False
+            self._set(state="current", status="أنت تستخدم أحدث إصدار من SINAX", busy=False)
+            return True
+
+        patches = manifest.get("patches") or []
+        selected = next(
+            (p for p in patches if str(p.get("from_version", "")).lstrip("vV") == APP_VERSION),
+            None,
+        )
+        if not selected:
+            self._auto_install = False
+            self._set(
+                state="unsupported",
+                status=f"الإصدار {tag} متاح، لكن لا يوجد Patch مباشر من {APP_VERSION}",
+                busy=False,
+            )
+            return True
+
+        asset_name = str(selected.get("asset", "")).strip()
+        if not asset_name:
+            raise RuntimeError("اسم حزمة التحديث غير موجود في manifest")
+
+        self._release_assets = {
+            asset_name: {
+                "name": asset_name,
+                "browser_download_url": _latest_asset_url(asset_name),
+                "size": int(selected.get("size", 0) or 0),
+            },
+            "SINAX-Updater.exe": {
+                "name": "SINAX-Updater.exe",
+                "browser_download_url": _latest_asset_url("SINAX-Updater.exe"),
+            },
+        }
+        self._selected_patch = selected
+        self._update_available = True
+        self._update_size = _human_size(int(selected.get("size", 0) or 0))
+        auto_install = self._auto_install
+        self._auto_install = False
+        self._set(
+            state="available",
+            status=f"يتوفر تحديث {tag} — الحجم {self._update_size}",
+            busy=False,
+        )
+        self.updateFound.emit(tag)
+        logger.info("Patch selected from public manifest: %s -> %s (%s)", APP_VERSION, tag, asset_name)
+        if auto_install:
+            self.installReady.emit()
+        return True
+
+    def _check_via_api(self) -> None:
+        release = json.loads(self._read_url(_RELEASES_API).decode("utf-8"))
+        tag = str(release.get("tag_name", "")).lstrip("vV")
+        self._latest_version = tag or APP_VERSION
+        self._release_notes = str(release.get("body") or "")[:4000]
+        assets = release.get("assets") or []
+        self._release_assets = {str(a.get("name")): a for a in assets if a.get("name")}
+        logger.info("Latest GitHub API release=%s assets=%s", tag, len(self._release_assets))
+
+        if not tag or _version_tuple(tag) <= _version_tuple(APP_VERSION):
+            self._update_available = False
+            self._update_size = ""
+            self._auto_install = False
+            self._set(state="current", status="أنت تستخدم أحدث إصدار من SINAX", busy=False)
+            return
+
+        manifest_asset = self._release_assets.get("update-manifest.json")
+        if not manifest_asset:
+            self._auto_install = False
+            self._set(
+                state="unsupported",
+                status="يوجد إصدار أحدث، لكن لا تتوفر له حزمة تحديث جزئي",
+                busy=False,
+            )
+            return
+
+        manifest = json.loads(self._asset_bytes(manifest_asset).decode("utf-8"))
+        patches = manifest.get("patches") or []
+        selected = next(
+            (p for p in patches if str(p.get("from_version", "")).lstrip("vV") == APP_VERSION),
+            None,
+        )
+        if not selected:
+            self._auto_install = False
+            self._set(
+                state="unsupported",
+                status=f"الإصدار {tag} متاح، لكن لا يوجد Patch مباشر من {APP_VERSION}",
+                busy=False,
+            )
+            return
+
+        asset_name = str(selected.get("asset", ""))
+        if asset_name not in self._release_assets:
+            raise RuntimeError("ملف Patch المذكور في manifest غير موجود في Release")
+
+        self._selected_patch = selected
+        self._update_available = True
+        self._update_size = _human_size(int(selected.get("size", 0) or 0))
+        auto_install = self._auto_install
+        self._auto_install = False
+        self._set(
+            state="available",
+            status=f"يتوفر تحديث {tag} — الحجم {self._update_size}",
+            busy=False,
+        )
+        self.updateFound.emit(tag)
+        if auto_install:
+            self.installReady.emit()
 
     @Slot()
     def checkForUpdates(self) -> None:
@@ -179,88 +314,41 @@ class UpdateService(QObject):
         self._selected_patch = None
         self._update_available = False
         self._progress = 0
-        self._set(state="checking", status="جارٍ فحص GitHub Releases...", busy=True)
+        self._set(state="checking", status="جارٍ فحص تحديثات SINAX...", busy=True)
         threading.Thread(target=self._check_worker, name="sinax-update-check", daemon=True).start()
 
     def _check_worker(self) -> None:
+        public_error: Optional[Exception] = None
         try:
-            release = json.loads(self._read_url(_RELEASES_API).decode("utf-8"))
-            tag = str(release.get("tag_name", "")).lstrip("vV")
-            self._latest_version = tag or APP_VERSION
-            self._release_notes = str(release.get("body") or "")[:4000]
-            assets = release.get("assets") or []
-            self._release_assets = {str(a.get("name")): a for a in assets if a.get("name")}
-            logger.info("Latest GitHub release=%s assets=%s", tag, len(self._release_assets))
+            # Prefer a direct public Release asset. This avoids GitHub API rate limits
+            # and does not require a token for the public repository.
+            manifest = json.loads(self._read_public(_LATEST_MANIFEST_URL, timeout=45).decode("utf-8"))
+            self._configure_from_manifest(manifest)
+            return
+        except Exception as exc:
+            public_error = exc
+            logger.warning("Public manifest check failed; falling back to GitHub API: %s", exc)
 
-            if not tag or _version_tuple(tag) <= _version_tuple(APP_VERSION):
-                self._update_available = False
-                self._update_size = ""
-                self._auto_install = False
-                self._set(state="current", status="أنت تستخدم أحدث إصدار من SINAX", busy=False)
-                return
-
-            manifest_asset = self._release_assets.get("update-manifest.json")
-            if not manifest_asset:
-                self._auto_install = False
-                self._set(
-                    state="unsupported",
-                    status="يوجد إصدار أحدث، لكن لا تتوفر له حزمة تحديث جزئي",
-                    busy=False,
-                )
-                return
-
-            manifest = json.loads(self._asset_bytes(manifest_asset).decode("utf-8"))
-            patches = manifest.get("patches") or []
-            selected = next(
-                (p for p in patches if str(p.get("from_version", "")).lstrip("vV") == APP_VERSION),
-                None,
-            )
-            if not selected:
-                self._auto_install = False
-                self._set(
-                    state="unsupported",
-                    status=f"الإصدار {tag} متاح، لكن لا يوجد Patch مباشر من {APP_VERSION}",
-                    busy=False,
-                )
-                return
-
-            asset_name = str(selected.get("asset", ""))
-            if asset_name not in self._release_assets:
-                raise RuntimeError("ملف Patch المذكور في manifest غير موجود في Release")
-
-            self._selected_patch = selected
-            self._update_available = True
-            self._update_size = _human_size(int(selected.get("size", 0) or 0))
-            auto_install = self._auto_install
-            self._auto_install = False
-            self._set(
-                state="available",
-                status=f"يتوفر تحديث {tag} — الحجم {self._update_size}",
-                busy=False,
-            )
-            self.updateFound.emit(tag)
-            logger.info("Patch selected: %s -> %s (%s)", APP_VERSION, tag, asset_name)
-            if auto_install:
-                self.installReady.emit()
+        try:
+            self._check_via_api()
         except urllib.error.HTTPError as exc:
             self._auto_install = False
-            if exc.code in (401, 403, 404):
-                msg = "تعذر الوصول إلى ملفات التحديث على GitHub."
-            else:
-                msg = f"فشل فحص التحديثات (HTTP {exc.code})"
-            logger.warning("Update check failed: %s", exc)
+            msg = f"تعذر الوصول إلى تحديثات GitHub (HTTP {exc.code})."
+            if exc.code == 403:
+                msg += " قد يكون حد طلبات GitHub API قد تم تجاوزه مؤقتًا."
+            logger.warning("API update check failed after public fallback: %s", exc)
             self._set(state="error", status=msg, busy=False)
             self.errorOccurred.emit(msg)
         except Exception as exc:
             self._auto_install = False
             logger.exception("Update check failed")
-            msg = f"تعذر فحص التحديثات: {exc}"
+            detail = public_error or exc
+            msg = f"تعذر فحص التحديثات: {detail}"
             self._set(state="error", status=msg, busy=False)
             self.errorOccurred.emit(msg)
 
     @Slot()
     def downloadAndInstall(self) -> None:
-        """Install the selected patch, or check first and then install automatically."""
         logger.info(
             "Install button clicked. busy=%s patch=%s frozen=%s exe=%s",
             self._busy,
@@ -273,8 +361,6 @@ class UpdateService(QObject):
             return
 
         if not self._selected_patch:
-            # Make the primary action genuinely one-click. If state was stale or
-            # the user did not press Check first, re-check and continue itself.
             self._auto_install = True
             self._set(state="checking", status="جارٍ تجهيز التحديث تلقائيًا...", progress=0, busy=False)
             self.checkForUpdates()
@@ -315,10 +401,9 @@ class UpdateService(QObject):
         if updater.exists() and updater.is_file() and updater.stat().st_size > 0:
             return updater
 
-        asset = self._release_assets.get("SINAX-Updater.exe")
-        if not asset:
-            raise RuntimeError("SINAX-Updater.exe غير موجود ولا يتوفر في Release")
-
+        asset = self._release_assets.get("SINAX-Updater.exe") or {
+            "browser_download_url": _latest_asset_url("SINAX-Updater.exe")
+        }
         self._set(status="محرك التحديث غير موجود محليًا؛ جارٍ تنزيله تلقائيًا...")
         data = self._asset_bytes(asset)
         expected_digest = str(asset.get("digest") or "").lower().strip()
@@ -338,7 +423,10 @@ class UpdateService(QObject):
             updater = self._ensure_updater(target_dir)
             patch = dict(self._selected_patch or {})
             asset_name = str(patch.get("asset", ""))
-            asset = self._release_assets[asset_name]
+            asset = self._release_assets.get(asset_name) or {
+                "browser_download_url": _latest_asset_url(asset_name),
+                "size": int(patch.get("size", 0) or 0),
+            }
             expected_size = int(asset.get("size", 0) or patch.get("size", 0) or 0)
             url = self._asset_download_url(asset)
             if not url:
@@ -347,7 +435,7 @@ class UpdateService(QObject):
             update_root = Path(tempfile.gettempdir()) / "SINAX" / "updates" / self._latest_version
             update_root.mkdir(parents=True, exist_ok=True)
             package_path = update_root / asset_name
-            req = urllib.request.Request(url, headers=self._headers(binary=True, include_token=False))
+            req = urllib.request.Request(url, headers=self._public_headers())
             digest = hashlib.sha256()
             downloaded = 0
             logger.info("Downloading patch from %s", url)
