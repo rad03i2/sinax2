@@ -1,14 +1,8 @@
 # -*- coding: utf-8 -*-
 """SINAX incremental update client.
 
-Checks GitHub Releases for an update manifest, downloads only the patch that
-matches the installed version, verifies SHA-256, then hands installation to the
-separate SINAX-Updater.exe so the running application can be replaced safely.
-
-For a private GitHub repository, set SINAX_GITHUB_TOKEN in the environment for
-developer testing. Production clients should use a public release feed; no token
-is ever embedded or persisted by SINAX. SINAX_UPDATE_API can override the release
-feed URL without rebuilding the application.
+Checks GitHub Releases for a version-specific patch, downloads only changed
+files, verifies SHA-256, and hands installation to SINAX-Updater.exe.
 """
 
 from __future__ import annotations
@@ -34,7 +28,7 @@ logger = get_logger("update_service")
 
 _DEFAULT_RELEASES_API = "https://api.github.com/repos/rad03i2/sinax2/releases/latest"
 _RELEASES_API = os.environ.get("SINAX_UPDATE_API", _DEFAULT_RELEASES_API).strip() or _DEFAULT_RELEASES_API
-_USER_AGENT = "SINAX-Updater/1.0"
+_USER_AGENT = "SINAX-Updater/1.1"
 
 
 def _version_tuple(value: str) -> tuple[int, ...]:
@@ -55,11 +49,17 @@ def _human_size(size: int) -> str:
     return f"{value:.1f} GB"
 
 
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest().lower()
+
+
 class UpdateService(QObject):
     changed = Signal()
     errorOccurred = Signal(str)
     updateFound = Signal(str)
     downloadFinished = Signal(str)
+    installReady = Signal()
+    quitRequested = Signal()
 
     def __init__(self, parent: Optional[QObject] = None):
         super().__init__(parent)
@@ -73,6 +73,12 @@ class UpdateService(QObject):
         self._selected_patch: Optional[Dict[str, Any]] = None
         self._release_assets: Dict[str, Dict[str, Any]] = {}
         self._busy = False
+        self._auto_install = False
+
+        # Signals emitted by Python worker threads are queued back to Qt's GUI
+        # thread. This avoids starting/exiting the app from a background thread.
+        self.installReady.connect(self._start_download_on_main)
+        self.quitRequested.connect(QCoreApplication.quit)
 
     @Property(str, notify=changed)
     def currentVersion(self) -> str:
@@ -122,39 +128,59 @@ class UpdateService(QObject):
             self._busy = busy
         self.changed.emit()
 
-    def _headers(self, binary: bool = False) -> Dict[str, str]:
+    def _headers(self, binary: bool = False, *, include_token: bool = True) -> Dict[str, str]:
         headers = {
             "User-Agent": _USER_AGENT,
             "Accept": "application/octet-stream" if binary else "application/vnd.github+json",
             "X-GitHub-Api-Version": "2022-11-28",
         }
         token = os.environ.get("SINAX_GITHUB_TOKEN", "").strip()
-        if token:
+        if include_token and token:
             headers["Authorization"] = f"Bearer {token}"
         return headers
 
     def _read_url(self, url: str, *, binary: bool = False) -> bytes:
+        """Read a URL, retrying anonymously if a stale developer token fails."""
         req = urllib.request.Request(url, headers=self._headers(binary=binary))
-        with urllib.request.urlopen(req, timeout=30) as response:
-            return response.read()
+        try:
+            with urllib.request.urlopen(req, timeout=30 if not binary else 90) as response:
+                return response.read()
+        except urllib.error.HTTPError as exc:
+            token = os.environ.get("SINAX_GITHUB_TOKEN", "").strip()
+            if token and exc.code in (401, 403, 404):
+                logger.warning("Authenticated update request failed (%s); retrying public feed", exc.code)
+                public_req = urllib.request.Request(
+                    url,
+                    headers=self._headers(binary=binary, include_token=False),
+                )
+                with urllib.request.urlopen(public_req, timeout=30 if not binary else 90) as response:
+                    return response.read()
+            raise
+
+    @staticmethod
+    def _asset_download_url(asset: Dict[str, Any]) -> str:
+        # Public browser_download_url is preferred now that sinax2 is public.
+        # It also avoids failures from stale/invalid local GitHub tokens.
+        return str(asset.get("browser_download_url") or asset.get("url") or "")
 
     def _asset_bytes(self, asset: Dict[str, Any]) -> bytes:
-        token = os.environ.get("SINAX_GITHUB_TOKEN", "").strip()
-        url = asset.get("url") if token else asset.get("browser_download_url")
+        url = self._asset_download_url(asset)
         if not url:
             raise RuntimeError("رابط ملف التحديث غير متاح")
-        return self._read_url(url, binary=bool(token))
+        return self._read_url(url, binary=True)
 
     @Slot()
     def checkForUpdates(self) -> None:
+        logger.info("Update check requested. current=%s busy=%s", APP_VERSION, self._busy)
         if self._busy:
+            self._set(status="هناك عملية تحديث قيد التنفيذ، انتظر قليلًا.")
             return
         self._busy = True
         self._selected_patch = None
         self._update_available = False
         self._progress = 0
         self._set(state="checking", status="جارٍ فحص GitHub Releases...", busy=True)
-        threading.Thread(target=self._check_worker, daemon=True).start()
+        threading.Thread(target=self._check_worker, name="sinax-update-check", daemon=True).start()
 
     def _check_worker(self) -> None:
         try:
@@ -164,15 +190,18 @@ class UpdateService(QObject):
             self._release_notes = str(release.get("body") or "")[:4000]
             assets = release.get("assets") or []
             self._release_assets = {str(a.get("name")): a for a in assets if a.get("name")}
+            logger.info("Latest GitHub release=%s assets=%s", tag, len(self._release_assets))
 
             if not tag or _version_tuple(tag) <= _version_tuple(APP_VERSION):
                 self._update_available = False
                 self._update_size = ""
+                self._auto_install = False
                 self._set(state="current", status="أنت تستخدم أحدث إصدار من SINAX", busy=False)
                 return
 
             manifest_asset = self._release_assets.get("update-manifest.json")
             if not manifest_asset:
+                self._auto_install = False
                 self._set(
                     state="unsupported",
                     status="يوجد إصدار أحدث، لكن لا تتوفر له حزمة تحديث جزئي",
@@ -187,6 +216,7 @@ class UpdateService(QObject):
                 None,
             )
             if not selected:
+                self._auto_install = False
                 self._set(
                     state="unsupported",
                     status=f"الإصدار {tag} متاح، لكن لا يوجد Patch مباشر من {APP_VERSION}",
@@ -201,24 +231,28 @@ class UpdateService(QObject):
             self._selected_patch = selected
             self._update_available = True
             self._update_size = _human_size(int(selected.get("size", 0) or 0))
+            auto_install = self._auto_install
+            self._auto_install = False
             self._set(
                 state="available",
                 status=f"يتوفر تحديث {tag} — الحجم {self._update_size}",
                 busy=False,
             )
             self.updateFound.emit(tag)
+            logger.info("Patch selected: %s -> %s (%s)", APP_VERSION, tag, asset_name)
+            if auto_install:
+                self.installReady.emit()
         except urllib.error.HTTPError as exc:
+            self._auto_install = False
             if exc.code in (401, 403, 404):
-                msg = (
-                    "تعذر الوصول إلى مصدر التحديث. إذا كان مستودع GitHub خاصًا، "
-                    "استخدم Release feed عامًا أو SINAX_GITHUB_TOKEN للاختبار فقط."
-                )
+                msg = "تعذر الوصول إلى ملفات التحديث على GitHub."
             else:
                 msg = f"فشل فحص التحديثات (HTTP {exc.code})"
             logger.warning("Update check failed: %s", exc)
             self._set(state="error", status=msg, busy=False)
             self.errorOccurred.emit(msg)
         except Exception as exc:
+            self._auto_install = False
             logger.exception("Update check failed")
             msg = f"تعذر فحص التحديثات: {exc}"
             self._set(state="error", status=msg, busy=False)
@@ -226,42 +260,98 @@ class UpdateService(QObject):
 
     @Slot()
     def downloadAndInstall(self) -> None:
-        if self._busy or not self._selected_patch:
+        """Install the selected patch, or check first and then install automatically."""
+        logger.info(
+            "Install button clicked. busy=%s patch=%s frozen=%s exe=%s",
+            self._busy,
+            bool(self._selected_patch),
+            getattr(sys, "frozen", False),
+            sys.executable,
+        )
+        if self._busy:
+            self._set(status="هناك عملية تحديث قيد التنفيذ، انتظر قليلًا.")
+            return
+
+        if not self._selected_patch:
+            # Make the primary action genuinely one-click. If state was stale or
+            # the user did not press Check first, re-check and continue itself.
+            self._auto_install = True
+            self._set(state="checking", status="جارٍ تجهيز التحديث تلقائيًا...", progress=0, busy=False)
+            self.checkForUpdates()
+            return
+
+        self._start_download_on_main()
+
+    @Slot()
+    def _start_download_on_main(self) -> None:
+        if self._busy:
+            return
+        if not self._selected_patch:
+            self._set(state="error", status="لم يتم تحديد حزمة تحديث صالحة. أعد الفحص.", busy=False)
             return
         if not getattr(sys, "frozen", False):
-            self._set(
-                state="error",
-                status="التثبيت التلقائي يعمل من نسخة SINAX المجمعة EXE فقط",
-                busy=False,
-            )
+            msg = "التثبيت التلقائي يعمل من نسخة SINAX المجمعة EXE فقط"
+            logger.error("Updater refused: application is not frozen. executable=%s", sys.executable)
+            self._set(state="error", status=msg, busy=False)
+            self.errorOccurred.emit(msg)
             return
 
-        updater = Path(sys.executable).resolve().parent / "SINAX-Updater.exe"
-        if not updater.exists():
-            self._set(state="error", status="SINAX-Updater.exe غير موجود بجانب البرنامج", busy=False)
-            return
+        target_dir = Path(sys.executable).resolve().parent
+        self._set(
+            state="downloading",
+            status="جارٍ تنزيل ملفات التحديث فقط...",
+            progress=0,
+            busy=True,
+        )
+        threading.Thread(
+            target=self._download_worker,
+            args=(target_dir,),
+            name="sinax-update-download",
+            daemon=True,
+        ).start()
 
-        self._set(state="downloading", status="جارٍ تنزيل ملفات التحديث فقط...", progress=0, busy=True)
-        threading.Thread(target=self._download_worker, args=(updater,), daemon=True).start()
+    def _ensure_updater(self, target_dir: Path) -> Path:
+        updater = target_dir / "SINAX-Updater.exe"
+        if updater.exists() and updater.is_file() and updater.stat().st_size > 0:
+            return updater
 
-    def _download_worker(self, updater: Path) -> None:
+        asset = self._release_assets.get("SINAX-Updater.exe")
+        if not asset:
+            raise RuntimeError("SINAX-Updater.exe غير موجود ولا يتوفر في Release")
+
+        self._set(status="محرك التحديث غير موجود محليًا؛ جارٍ تنزيله تلقائيًا...")
+        data = self._asset_bytes(asset)
+        expected_digest = str(asset.get("digest") or "").lower().strip()
+        if expected_digest.startswith("sha256:"):
+            expected_hash = expected_digest.split(":", 1)[1]
+            if _sha256_bytes(data) != expected_hash:
+                raise RuntimeError("فشل التحقق من SINAX-Updater.exe")
+
+        tmp = updater.with_suffix(".exe.sinax-new")
+        tmp.write_bytes(data)
+        os.replace(tmp, updater)
+        logger.info("Downloaded missing updater to %s", updater)
+        return updater
+
+    def _download_worker(self, target_dir: Path) -> None:
         try:
+            updater = self._ensure_updater(target_dir)
             patch = dict(self._selected_patch or {})
             asset_name = str(patch.get("asset", ""))
             asset = self._release_assets[asset_name]
             expected_size = int(asset.get("size", 0) or patch.get("size", 0) or 0)
-            token = os.environ.get("SINAX_GITHUB_TOKEN", "").strip()
-            url = asset.get("url") if token else asset.get("browser_download_url")
+            url = self._asset_download_url(asset)
             if not url:
                 raise RuntimeError("تعذر تحديد رابط تنزيل Patch")
 
             update_root = Path(tempfile.gettempdir()) / "SINAX" / "updates" / self._latest_version
             update_root.mkdir(parents=True, exist_ok=True)
             package_path = update_root / asset_name
-            req = urllib.request.Request(url, headers=self._headers(binary=bool(token)))
+            req = urllib.request.Request(url, headers=self._headers(binary=True, include_token=False))
             digest = hashlib.sha256()
             downloaded = 0
-            with urllib.request.urlopen(req, timeout=60) as response, package_path.open("wb") as out:
+            logger.info("Downloading patch from %s", url)
+            with urllib.request.urlopen(req, timeout=120) as response, package_path.open("wb") as out:
                 total = int(response.headers.get("Content-Length") or expected_size or 0)
                 while True:
                     chunk = response.read(1024 * 1024)
@@ -279,7 +369,6 @@ class UpdateService(QObject):
                 package_path.unlink(missing_ok=True)
                 raise RuntimeError("فشل التحقق من SHA-256 لحزمة التحديث")
 
-            target_dir = Path(sys.executable).resolve().parent
             args = [
                 str(updater),
                 "--package", str(package_path),
@@ -287,12 +376,18 @@ class UpdateService(QObject):
                 "--pid", str(os.getpid()),
                 "--relaunch", str(Path(sys.executable).resolve()),
             ]
+            logger.info("Launching external updater: %s", updater)
             subprocess.Popen(args, cwd=str(target_dir), close_fds=True)
-            self._set(state="installing", status="تم التنزيل. سيُغلق SINAX لتطبيق التحديث...", progress=100, busy=False)
+            self._set(
+                state="installing",
+                status="تم التنزيل بنجاح. سيُغلق SINAX الآن لتطبيق التحديث...",
+                progress=100,
+                busy=False,
+            )
             self.downloadFinished.emit(str(package_path))
-            QCoreApplication.quit()
+            self.quitRequested.emit()
         except Exception as exc:
-            logger.exception("Update download failed")
+            logger.exception("Update download/install preparation failed")
             msg = f"فشل تنزيل أو تجهيز التحديث: {exc}"
             self._set(state="error", status=msg, busy=False)
             self.errorOccurred.emit(msg)

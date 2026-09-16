@@ -41,6 +41,21 @@ def file_map(root: Path) -> dict[str, dict]:
     return result
 
 
+def _load_public_manifest(path: Path, to_version: str) -> dict:
+    if not path.exists():
+        return {"schema": 1, "version": to_version, "patches": []}
+    try:
+        existing = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return {"schema": 1, "version": to_version, "patches": []}
+    if str(existing.get("version", "")) != str(to_version):
+        return {"schema": 1, "version": to_version, "patches": []}
+    patches = existing.get("patches")
+    if not isinstance(patches, list):
+        patches = []
+    return {"schema": 1, "version": to_version, "patches": patches}
+
+
 def build_patch(previous: Path, current: Path, from_version: str, to_version: str,
                 output_zip: Path, release_manifest: Path) -> dict:
     old = file_map(previous)
@@ -90,20 +105,25 @@ def build_patch(previous: Path, current: Path, from_version: str, to_version: st
 
     patch_sha = sha256_file(output_zip)
     patch_size = output_zip.stat().st_size
-    public_manifest = {
-        "schema": 1,
-        "version": to_version,
-        "patches": [
-            {
-                "from_version": from_version,
-                "asset": output_zip.name,
-                "sha256": patch_sha,
-                "size": patch_size,
-                "changed_files": len(changed),
-                "deleted_files": len(deleted),
-            }
-        ],
+    patch_info = {
+        "from_version": from_version,
+        "asset": output_zip.name,
+        "sha256": patch_sha,
+        "size": patch_size,
+        "changed_files": len(changed),
+        "deleted_files": len(deleted),
     }
+
+    # Preserve patches generated from other supported installed versions. This
+    # lets one Release contain direct patches such as 1.1.0 -> 1.1.2 and
+    # 1.1.1 -> 1.1.2, so users do not need to install every intermediate build.
+    public_manifest = _load_public_manifest(release_manifest, to_version)
+    public_manifest["patches"] = [
+        p for p in public_manifest["patches"]
+        if str(p.get("from_version", "")) != str(from_version)
+    ]
+    public_manifest["patches"].append(patch_info)
+    public_manifest["patches"].sort(key=lambda p: str(p.get("from_version", "")))
     release_manifest.write_text(
         json.dumps(public_manifest, ensure_ascii=False, indent=2),
         encoding="utf-8",

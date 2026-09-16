@@ -207,39 +207,62 @@ Item {
                             font.bold: true
                             color: Theme.textPrimary
                             Layout.fillWidth: true
+                            horizontalAlignment: Text.AlignRight
                         }
 
-                        SinaxBadge {
-                            text: "الإصدار الحالي " + settingsController.currentVersion
-                            variant: "info"
+                        Text {
+                            text: "الإصدار الحالي: " + settingsController.currentVersion
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontSmall
+                            font.bold: true
+                            color: Theme.primary
                         }
                     }
 
                     Rectangle { Layout.fillWidth: true; height: 1; color: Theme.divider }
 
-                    Text {
+                    Rectangle {
                         Layout.fillWidth: true
-                        text: settingsController.updateStatus
-                        horizontalAlignment: Text.AlignRight
-                        wrapMode: Text.WordWrap
-                        font.family: Theme.fontFamily
-                        font.pixelSize: Theme.fontBody
-                        color: settingsController.updateState === "error" ? Theme.error : Theme.textSecondary
+                        implicitHeight: updateStatusText.implicitHeight + Theme.spacingM * 2
+                        radius: Theme.radiusSmall
+                        color: settingsController.updateState === "error" ? Theme.surfaceElevated : Theme.background
+                        border.color: settingsController.updateState === "error" ? Theme.error : Theme.borderSubtle
+                        border.width: 1
+
+                        Text {
+                            id: updateStatusText
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            anchors.margins: Theme.spacingM
+                            text: settingsController.updateStatus
+                            horizontalAlignment: Text.AlignRight
+                            wrapMode: Text.WordWrap
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontBody
+                            color: settingsController.updateState === "error" ? Theme.error : Theme.textPrimary
+                        }
                     }
 
                     RowLayout {
                         Layout.fillWidth: true
                         layoutDirection: Qt.RightToLeft
                         visible: settingsController.updateAvailable
+                        spacing: Theme.spacingL
 
-                        SinaxBadge {
-                            text: "الجديد " + settingsController.latestVersion
-                            variant: "success"
+                        Text {
+                            text: "الإصدار الجديد: " + settingsController.latestVersion
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontBody
+                            font.bold: true
+                            color: Theme.success
                         }
 
-                        SinaxBadge {
-                            text: "حجم التحديث " + settingsController.updateSize
-                            variant: "default"
+                        Text {
+                            text: "حجم التحديث فقط: " + settingsController.updateSize
+                            font.family: Theme.fontFamily
+                            font.pixelSize: Theme.fontBody
+                            color: Theme.textSecondary
                         }
 
                         Item { Layout.fillWidth: true }
@@ -258,19 +281,18 @@ Item {
                         layoutDirection: Qt.RightToLeft
                         spacing: Theme.spacingM
 
-                        SinaxButton {
-                            text: settingsController.updateBusy ? "جارٍ الفحص..." : "فحص التحديثات"
-                            variant: "secondary"
+                        Button {
+                            text: settingsController.updateBusy ? "جارٍ العمل..." : "تحديث الآن"
                             enabled: !settingsController.updateBusy
-                            onClicked: settingsController.checkForUpdates()
+                            implicitHeight: 40
+                            onClicked: settingsController.downloadAndInstallUpdate()
                         }
 
-                        SinaxButton {
-                            text: "تنزيل وتثبيت التحديث"
-                            variant: "primary"
-                            visible: settingsController.updateAvailable
+                        Button {
+                            text: "فحص فقط"
                             enabled: !settingsController.updateBusy
-                            onClicked: settingsController.downloadAndInstallUpdate()
+                            implicitHeight: 40
+                            onClicked: settingsController.checkForUpdates()
                         }
 
                         Item { Layout.fillWidth: true }
@@ -278,7 +300,7 @@ Item {
 
                     Text {
                         Layout.fillWidth: true
-                        text: "يُنزل SINAX الملفات التي تغيرت فقط، ويتحقق من SHA-256، ثم يستخدم SINAX-Updater.exe مع نسخة احتياطية وRollback تلقائي عند الفشل."
+                        text: "زر «تحديث الآن» يفحص GitHub تلقائيًا ثم ينزّل Patch الإصدار المناسب فقط، ويتحقق من SHA-256، ويطبق التحديث عبر SINAX-Updater.exe مع نسخة احتياطية وRollback."
                         horizontalAlignment: Text.AlignRight
                         wrapMode: Text.WordWrap
                         font.family: Theme.fontFamily
