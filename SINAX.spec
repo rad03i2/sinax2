@@ -4,9 +4,15 @@ from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 # Bundle the complete PySide6 runtime plus SINAX modules that are imported lazily.
 pyside_datas, pyside_binaries, pyside_hiddenimports = collect_all('PySide6')
+yaml_datas, yaml_binaries, yaml_hiddenimports = collect_all('yaml')
+markdown_datas, markdown_binaries, markdown_hiddenimports = collect_all('markdown')
+pptx_datas, pptx_binaries, pptx_hiddenimports = collect_all('pptx')
 
 hiddenimports = list(dict.fromkeys(
     pyside_hiddenimports
+    + yaml_hiddenimports
+    + markdown_hiddenimports
+    + pptx_hiddenimports
     + collect_submodules('app')
     + collect_submodules('psutil')
     + ['psutil']
@@ -14,7 +20,7 @@ hiddenimports = list(dict.fromkeys(
 
 # Keep runtime assets at the same relative paths used by the source tree so
 # qml_helper.py and the rest of SINAX can resolve them in a frozen build.
-datas = pyside_datas + [
+datas = pyside_datas + yaml_datas + markdown_datas + pptx_datas + [
     ('app/ui/qml', 'app/ui/qml'),
     ('app/ui/themes', 'app/ui/themes'),
     ('app/resources', 'app/resources'),
@@ -25,7 +31,7 @@ datas = pyside_datas + [
 a = Analysis(
     ['main.py'],
     pathex=['.'],
-    binaries=pyside_binaries,
+    binaries=pyside_binaries + yaml_binaries + markdown_binaries + pptx_binaries,
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
