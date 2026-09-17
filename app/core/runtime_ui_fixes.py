@@ -2,17 +2,15 @@
 """Runtime UI reliability fixes for SINAX.
 
 This module intentionally keeps the fixes centralized so they are applied before
-MainWindow creates any lazy pages.  It restores the proven QWidget catalogs for
+MainWindow creates any lazy pages. It restores the proven QWidget catalogs for
 PDF / Image / Video / Audio centers, removes the obsolete multimedia placeholder,
-and improves precision-touchpad two-finger scrolling without affecting the normal
-mouse wheel.
+protects the universal converter, and improves precision-touchpad two-finger
+scrolling without changing a normal 120-step mouse wheel.
 """
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PySide6.QtCore import QObject, QEvent, QPoint, QCoreApplication
+from PySide6.QtCore import QObject, QEvent, QPoint, QCoreApplication, Qt
 from PySide6.QtGui import QWheelEvent
 from PySide6.QtWidgets import QStackedWidget, QVBoxLayout, QMessageBox
 
@@ -22,46 +20,72 @@ logger = get_logger("runtime_ui_fixes")
 
 
 class TouchpadScrollAccelerator(QObject):
-    """Amplifies high-resolution touchpad pixel scrolling while preserving smoothness.
+    """Amplify precision-touchpad scrolling while leaving normal mouse wheels alone.
 
-    Windows precision touchpads normally send QWheelEvent.pixelDelta().  Qt applies
-    that delta literally, which made two-finger scrolling inside SINAX feel much
-    slower than native Windows applications.  We resend only those high-resolution
-    events with a larger pixel delta.  Traditional mouse-wheel events (angleDelta)
-    are left untouched.
+    Depending on the Windows/Qt/driver combination, a precision touchpad may arrive
+    as pixelDelta(), as small/high-resolution angleDelta() values, or as wheel events
+    carrying a scroll phase. Older SINAX code only accelerated pixelDelta(), so on
+    some Windows laptops the two-finger gesture was never detected. This filter
+    recognises all three forms and scales the event before the target widget handles
+    it. A traditional mouse wheel normally emits +/-120 angle units with no scroll
+    phase and is therefore passed through unchanged.
     """
 
-    def __init__(self, parent=None, factor: float = 3.0):
+    def __init__(self, parent=None, factor: float = 4.0):
         super().__init__(parent)
         self.factor = max(1.0, float(factor))
         self._reposting = False
+
+    @staticmethod
+    def _is_precision_scroll(event: QWheelEvent) -> bool:
+        pixel = event.pixelDelta()
+        if not pixel.isNull():
+            return True
+
+        # Precision touchpads frequently expose ScrollBegin/ScrollUpdate/ScrollEnd
+        # even when the Windows backend reports angle deltas instead of pixels.
+        try:
+            if event.phase() != Qt.ScrollPhase.NoScrollPhase:
+                return True
+        except Exception:
+            pass
+
+        angle = event.angleDelta()
+        values = [abs(v) for v in (angle.x(), angle.y()) if v]
+        if not values:
+            return False
+
+        # A classic wheel notch is 120 units. High-resolution touchpad/wheel events
+        # are usually smaller than one notch or are not exact multiples of 120.
+        return max(values) < 120 or any((v % 120) != 0 for v in values)
 
     def eventFilter(self, watched, event):
         if self._reposting or event.type() != QEvent.Wheel:
             return False
 
         try:
+            if not self._is_precision_scroll(event):
+                return False
+
             pixel = event.pixelDelta()
-        except Exception:
-            return False
+            angle = event.angleDelta()
+            scaled_pixel = QPoint(
+                int(round(pixel.x() * self.factor)),
+                int(round(pixel.y() * self.factor)),
+            )
+            scaled_angle = QPoint(
+                int(round(angle.x() * self.factor)),
+                int(round(angle.y() * self.factor)),
+            )
 
-        # Mouse wheels normally have no pixelDelta; do not change their behaviour.
-        if pixel.isNull():
-            return False
+            if scaled_pixel == pixel and scaled_angle == angle:
+                return False
 
-        scaled = QPoint(
-            int(round(pixel.x() * self.factor)),
-            int(round(pixel.y() * self.factor)),
-        )
-        if scaled == pixel:
-            return False
-
-        try:
             accelerated = QWheelEvent(
                 event.position(),
                 event.globalPosition(),
-                scaled,
-                event.angleDelta(),
+                scaled_pixel,
+                scaled_angle,
                 event.buttons(),
                 event.modifiers(),
                 event.phase(),
@@ -72,7 +96,7 @@ class TouchpadScrollAccelerator(QObject):
             event.accept()
             return True
         except Exception as exc:
-            # Never let a scrolling enhancement break the application.
+            # Scrolling enhancement must never be able to break the application.
             logger.debug("Touchpad acceleration fallback: %s", exc)
             return False
         finally:
@@ -83,8 +107,8 @@ def _stable_center_init(self):
     """Initialize a media/PDF center with its reliable QWidget catalog.
 
     The project already contains complete QWidget catalogs and workspaces for all
-    four centers.  The newer QML landing pages could load without their tool model
-    in packaged builds, producing an empty/non-working center.  This initializer
+    four centers. The newer QML landing pages could load without their tool model
+    in packaged builds, producing an empty/non-working center. This initializer
     keeps the modern app shell while using the proven catalog implementation.
     """
 
@@ -122,13 +146,12 @@ def _patch_centers() -> None:
     VideoCenterPage.is_in_workspace = _is_in_workspace
     VideoCenterPage.close_workspace = VideoCenterPage._close_workspace
 
-    # AudioCenterPage already defines both methods, but keep the check consistent.
     if not hasattr(AudioCenterPage, "is_in_workspace"):
         AudioCenterPage.is_in_workspace = _is_in_workspace
 
 
 def _remove_obsolete_media_placeholder() -> None:
-    """Remove 'أدوات الوسائط (قريباً)' from both navigation sources."""
+    """Remove 'أدوات الوسائط (قريباً)' from navigation before the sidebar is built."""
 
     from app.core.navigation_constants import NAVIGATION_SECTIONS
 
@@ -143,8 +166,6 @@ def _remove_obsolete_media_placeholder() -> None:
             changed = True
         break
 
-    # navigation_controller is instantiated during imports, so rebuild its model
-    # after mutating the shared NAVIGATION_SECTIONS list.
     try:
         from app.controllers.navigation_controller import navigation_controller
 
@@ -225,14 +246,13 @@ def install_runtime_ui_fixes(app) -> TouchpadScrollAccelerator:
     _patch_pdf_back_navigation()
     _patch_converter_error_boundary()
 
-    accelerator = TouchpadScrollAccelerator(app, factor=3.0)
+    accelerator = TouchpadScrollAccelerator(app, factor=4.0)
     app.installEventFilter(accelerator)
-    # Keep a strong reference for the lifetime of QApplication.
     app._sinax_touchpad_scroll_accelerator = accelerator
 
     logger.info(
         "Runtime UI fixes installed: stable PDF/media catalogs, converter boundary, "
-        "media placeholder removed, touchpad scroll x%.1f",
+        "media placeholder removed, precision scroll x%.1f",
         accelerator.factor,
     )
     return accelerator
