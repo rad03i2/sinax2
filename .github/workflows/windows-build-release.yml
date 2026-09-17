@@ -44,7 +44,7 @@ jobs:
       - name: Verify critical imports and update tooling
         shell: pwsh
         run: |
-          python -c "import PySide6, psutil; print('PySide6', PySide6.__version__); print('psutil', psutil.__version__)"
+          python -c "import PySide6, psutil, fitz; print('PySide6', PySide6.__version__); print('psutil', psutil.__version__); print('PyMuPDF', fitz.VersionBind)"
           python -m compileall -q main.py app tools tests\test_incremental_update.py
           python -c "from app.core.constants import APP_VERSION; print('SINAX version', APP_VERSION)"
 
